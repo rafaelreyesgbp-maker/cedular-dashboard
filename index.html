@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<title>Impuesto Cedular · Proyecci&oacute;n Cierre &ndash; AAFY 2026</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { background: #F0EDE8; min-height: 100vh; }
+:root { --burgundy: #8B1A2E; --gold: #C9A84C; --teal: #1D9E75; --navy: #0D1B3E; --cream: #F5F2EE; }
+.header { background: var(--burgundy); color: #fff; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header h1 { font-size: 17px; font-weight: 800; letter-spacing: 0.3px; }
+.header .sub { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+.header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+select.month-sel { background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.4); color: #fff; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; appearance: none; -webkit-appearance: none; }
+select.month-sel option { background: var(--burgundy); }
+.btn-refresh { background: var(--gold); color: var(--navy); border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.2s; }
+.btn-refresh:hover { opacity: 0.85; }
+.btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-hdr-exp { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,0.45); padding: 6px 11px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.btn-hdr-exp:hover { background: rgba(255,255,255,0.15); }
+.gold-bar { background: var(--gold); height: 4px; }
+.content { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+.status-bar { background: #fff; border-radius: 8px; padding: 8px 16px; margin-bottom: 16px; font-size: 11px; color: #666; display: flex; align-items: center; gap: 8px; border-left: 3px solid var(--teal); }
+.status-bar.updating { border-left-color: var(--gold); }
+.status-bar.error { border-left-color: #E57373; }
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi-card { background: #fff; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); border-top: 4px solid var(--teal); }
+.kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #888; }
+.kpi-sub { font-size: 10px; color: #aaa; margin-top: 1px; margin-bottom: 6px; }
+.kpi-val { font-size: 24px; font-weight: 800; line-height: 1.1; letter-spacing: -0.5px; }
+.kpi-note { font-size: 11px; color: #666; margin-top: 4px; }
+.section { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.sec-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--navy); opacity: 0.7; margin-bottom: 14px; }
+.progress-wrap { background: #F1F5F9; border-radius: 99px; height: 14px; overflow: hidden; margin: 6px 0 4px; }
+.progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s; }
+.seg-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.seg-card { border-radius: 10px; padding: 14px 16px; border: 1.5px solid #ddd; }
+.seg-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.seg-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.seg-count { font-size: 11px; color: #666; }
+.seg-monto { font-size: 16px; font-weight: 800; margin-top: 6px; }
+.table-header { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.search-input { flex: 1; min-width: 180px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; }
+.search-input:focus { border-color: var(--teal); }
+.seg-filter { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; background: #fff; }
+.btn-export-tbl { background: #1D9E75; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-export-tbl:hover { opacity: 0.85; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th { background: var(--navy); color: #fff; padding: 10px 12px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; cursor: pointer; user-select: none; }
+thead th:hover { background: #162B58; }
+thead th:last-child { text-align: right; }
+.sort-ind { margin-left: 4px; opacity: 0.4; font-size: 9px; }
+.sort-ind.on { opacity: 1; }
+tbody tr:nth-child(even) { background: #F8FAFB; }
+tbody tr:hover { background: #E8F7F2; }
+td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+td:last-child { text-align: right; font-weight: 700; }
+.rfc-code { font-family: monospace; font-size: 11px; color: var(--navy); }
+.seg-pill { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+tfoot tr { background: var(--cream) !important; }
+tfoot td { font-weight: 700; font-size: 13px; border-top: 2px solid #ddd; }
+.pagination { display: flex; gap: 4px; padding: 10px 0; align-items: center; justify-content: center; flex-wrap: wrap; }
+.page-btn { padding: 4px 9px; border-radius: 5px; font-size: 12px; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #333; }
+.page-btn:disabled { background: #f5f5f5; color: #ccc; cursor: default; }
+.page-btn.active { background: var(--burgundy); color: #fff; border-color: var(--burgundy); font-weight: 700; }
+.footer { background: var(--navy); color: #fff; padding: 10px 24px; font-size: 11px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; opacity: 0.9; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media print { .header-right, .gold-bar, #omisos-section, .export-btn-row { display:none !important; } body { background:#fff !important; } .section { break-inside:avoid; box-shadow:none !important; } }
+.export-btn-row { display:flex; flex-direction:column; gap:6px; margin-top:8px; margin-bottom:16px; }
+.btn-export { background:#fff; color:#8B1A2E; border:1.5px solid #8B1A2E; border-radius:8px; padding:7px 14px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.btn-export:hover { background:#F5F2EE; }
+@media (max-width: 640px) {
+  .header { padding: 12px 16px; }
+  .content { padding: 12px 14px; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-val { font-size: 20px; }
+  .seg-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  table { font-size: 11px; min-width: 560px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>AAFY &middot; Impuesto Cedular sobre la Obtenci&oacute;n de Ingresos por Actividades Empresariales &middot; Proyecci&oacute;n de Cierre 2026</h1>
+    <div class="sub">Agencia de Administraci&oacute;n Fiscal de Yucat&aacute;n &middot; Datos actualizados autom&aacute;ticamente</div>
+  </div>
+  <div class="header-right">
+    <select class="month-sel" id="monthSel" onchange="switchMonth(+this.value)"></select>
+    <button class="btn-refresh" id="btnRefresh" onclick="loadFromDrive()">&#8635; Actualizar</button>
+    <button class="btn-hdr-exp" onclick="window.print()">PDF</button>
+    <button class="btn-hdr-exp" onclick="exportPNG()">PNG</button>
+    <button class="btn-hdr-exp" onclick="exportExcel()">XLS</button>
+  </div>
+</div>
+<div class="gold-bar"></div>
+
+<div class="content">
+  <div class="status-bar" id="statusBar">
+    <span class="spinner" id="spinner" style="display:none"></span>
+    <span id="statusMsg">Iniciando...</span>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-card" style="border-top-color:var(--teal)">
+      <div class="kpi-label">Acumulado Real</div>
+      <div class="kpi-sub" id="kpiAcumSub">-</div>
+      <div class="kpi-val" id="kpiAcumVal">-</div>
+      <div class="kpi-note" id="kpiAcumNote"></div>
+    </div>
+    <div class="kpi-card" style="border-top-color:var(--gold)">
+      <div class="kpi-label">Meta del Mes</div>
+      <div class="kpi-sub" id="kpiMetaSub">-</div>
+      <div class="kpi-val" id="kpiMetaVal">-</div>
+      <div class="kpi-note" id="kpiMetaNote"></div>
+    </div>
+    <div class="kpi-card" id="kpiProyCard" style="border-top-color:#888">
+      <div class="kpi-label">Proyecci&oacute;n Cierre</div>
+      <div class="kpi-sub" id="kpiProySub">-</div>
+      <div class="kpi-val" id="kpiProyVal">-</div>
+      <div class="kpi-note" id="kpiProyNote"></div>
+    </div>
+    <div class="kpi-card" style="border-top-color:#E57373">
+      <div class="kpi-label">Omisos Detectados</div>
+      <div class="kpi-sub" id="kpiOmisosSub">-</div>
+      <div class="kpi-val" id="kpiOmisosVal">-</div>
+      <div class="kpi-note" id="kpiOmisosNote"></div>
+    </div>
+  </div>
+  <div id="ytdCard" style="margin-bottom:16px"></div>
+  <div class="section">
+    <div class="sec-title">Avance vs Meta</div>
+    <div id="avanceContent"></div>
+    <div style="font-size:11px;color:#999;margin-top:10px" id="periodDominant"></div>
+  </div>
+  <div class="section">
+    <div class="sec-title">Segmentos de Omisos</div>
+    <div class="seg-grid" id="segGrid"></div>
+  </div>
+  <div class="section" id="omisos-section">
+    <div class="sec-title">Detalle de Omisos</div>
+    <div class="table-header">
+      <input class="search-input" id="searchInput" type="text" placeholder="Buscar RFC o contribuyente..." oninput="renderTable()">
+      <select class="seg-filter" id="segFilter" onchange="renderTable()">
+        <option value="">Todos los segmentos</option>
+        <option value="alta">Alta</option>
+        <option value="media">Media</option>
+        <option value="seguimiento">Seguimiento</option>
+        <option value="omisos_totales">Omisos Totales</option>
+      </select>
+      <button class="btn-export-tbl" onclick="exportExcel()">&#8595; Exportar Excel</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead id="omisosHead"></thead>
+        <tbody id="omisosBody"></tbody>
+        <tfoot id="omisosFoot"></tfoot>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>AAFY - Impuesto Cedular - Proyeccion de Cierre 2026</span>
+  <span id="footerUpdated"></span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const FOLDER_ID = "1nFW72GZ3XLmbDasLJD0JY9M7NF9MtB-Y";
+const API_KEY   = "AIzaSyAId7gthv7EEzmaTrfbt07FK4Kf-ii51uM";
+const METAS = {
+  1:8891728, 2:7958748, 3:7867639,  4:8511439,
+  5:8595150, 6:7849800, 7:8407930,  8:8215539,
+  9:7617855,10:7846543,11:8383464, 12:7943525
+};
+const HIST_2025 = {
+  1:8440885, 2:7960432, 3:7724095, 4:8760451,
+  5:9195033, 6:7773571, 7:8421934, 8:7323096,
+  9:7626375,10:8719287,11:8119475,12:7903120
+};
+const MONTH_NAMES = {
+  "enero":1,"febrero":2,"marzo":3,"abril":4,"mayo":5,"junio":6,
+  "julio":7,"agosto":8,"septiembre":9,"octubre":10,"noviembre":11,"diciembre":12
+};
+const MONTH_LABELS = {
+  1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo",6:"Junio",
+  7:"Julio",8:"Agosto",9:"Septiembre",10:"Octubre",11:"Noviembre",12:"Diciembre"
+};
+
+let allData = {};
+var lastUpdated = '';
+let currentMonth=null, allOmisos=[], currentPage=1;
+const PAGE_SIZE=50;
+let sortCol='seg', sortDir=1;
+const SEG_ORDER={alta:1,media:2,seguimiento:3,omisos_totales:4};
+
+function sortRows(rows){
+  return [...rows].sort((a,b)=>{
+    if(sortCol==='seg'){const d=(SEG_ORDER[a.seg]||9)-(SEG_ORDER[b.seg]||9);return d!==0?d:b.avg-a.avg;}
+    if(sortCol==='rfc')return sortDir*a.rfc.localeCompare(b.rfc);
+    if(sortCol==='contrib')return sortDir*(a.contrib||'').localeCompare(b.contrib||'');
+    if(sortCol==='count')return sortDir*(b.count-a.count);
+    if(sortCol==='avg')return sortDir*(b.avg-a.avg);
+    return 0;
+  });
+}
+function toggleSort(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}currentPage=1;renderTable();}
+
+function fmt(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n);}
+function fmtK(n){if(n>=1e6)return '$'+(n/1e6).toFixed(1)+'M';if(n>=1e3)return '$'+(n/1e3).toFixed(0)+'K';return fmt(n);}
+function normalizeStr(s){return(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
+
+function prevPeriod(p){p=String(p);let y=parseInt(p.slice(0,4)),m=parseInt(p.slice(4));m--;if(m===0){m=12;y--;}return y+String(m).padStart(2,'0');}
+function formatPeriod(p){const s=String(p);const L=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];try{return L[parseInt(s.slice(4,6))]+'-'+s.slice(2,4);}catch(e){return s;}}
+
+async function driveListFiles(){const r=await fetch('https://www.googleapis.com/drive/v3/files?q=%27'+FOLDER_ID+'%27+in+parents+and+trashed%3Dfalse&fields=files(id,name,mimeType)&pageSize=40&key='+API_KEY);if(!r.ok)throw new Error('Drive list: '+r.status);return(await r.json()).files||[];}
+async function driveDownload(id){const r=await fetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media&key='+API_KEY);if(!r.ok)throw new Error('Drive dl: '+r.status);return await r.arrayBuffer();}
+
+// Cedular: RFC=A(0), Contrib=B(1), Periodo=E(4), Rec=N(13)-H(7)
+const CED_RFC=0,CED_CONTRIB=1,CED_PERIODO=4,CED_N=13,CED_H=7;
+
+function _findDataStart(rows,col){for(let i=0;i<Math.min(20,rows.length);i++){const v=String(rows[i][col]||'').trim();if(v.length>=12&&!/^[a-zA-Z\s]+$/.test(v))return i;}return -1;}
+function _parseCedular(rows){const s=_findDataStart(rows,CED_RFC);if(s<0)return[];const out=[];for(let i=s;i<rows.length;i++){const row=rows[i];const rfc=String(row[CED_RFC]||'').trim().toUpperCase();if(!rfc||rfc.length<12)continue;let p=String(row[CED_PERIODO]||'').trim();if(/^\d+\.?\d*$/.test(p))p=String(parseInt(p));if(p.length!==6)continue;const N=parseFloat(row[CED_N])||0,H=parseFloat(row[CED_H])||0;out.push({rfc,periodo:p,recaudacion:N-H,contrib:String(row[CED_CONTRIB]||'').trim()});}return out;}
+function _parseWorkbook(buf){let wb;try{wb=XLSX.read(new Uint8Array(buf),{type:'array'});}catch(e){return[];}const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});return _parseCedular(rows);}
+
+function getDominant(records){const t={};for(const r of records)if(r.periodo)t[r.periodo]=(t[r.periodo]||0)+r.recaudacion;const k=Object.keys(t);if(!k.length)return null;return k.reduce((a,b)=>t[a]>t[b]?a:b);}
+function getMissingPeriods(paidSet,dominant,maxBack,stopBefore){const out=[];let p=String(dominant);while(!paidSet.has(p)){if(stopBefore&&parseInt(p)<parseInt(stopBefore))break;out.push(p);p=prevPeriod(p);if(out.length>=maxBack)break;}return out;}
+function computeMonth(monthNum,allMonthData){
+  const cur=allMonthData[monthNum]||[];
+  const dominant=getDominant(cur);
+  const acumulado=cur.reduce((s,r)=>s+r.recaudacion,0);
+  const refMonths=[];for(let m=Math.max(1,monthNum-4);m<monthNum;m++)if(allMonthData[m]&&allMonthData[m].length)refMonths.push(m);
+  const nRef=refMonths.length;
+  const globalPeriods={},globalContrib={};
+  for(let m=1;m<=monthNum;m++)for(const r of allMonthData[m]||[]){if(!globalPeriods[r.rfc])globalPeriods[r.rfc]={};const gp=globalPeriods[r.rfc];if(!gp[r.periodo]||r.recaudacion>gp[r.periodo])gp[r.periodo]=r.recaudacion;if(!globalContrib[r.rfc]&&r.contrib)globalContrib[r.rfc]=r.contrib;}
+  const rfcRefCount={},rfcRefPeriods={},rfcContrib={},paid2026InRef={};
+  for(const rm of refMonths){const seen=new Set();for(const r of allMonthData[rm]||[]){if(!rfcRefPeriods[r.rfc])rfcRefPeriods[r.rfc]={};const rp=rfcRefPeriods[r.rfc];if(!rp[r.periodo]||r.recaudacion>rp[r.periodo])rp[r.periodo]=r.recaudacion;if(String(r.periodo).startsWith('2026')){if(!paid2026InRef[r.rfc])paid2026InRef[r.rfc]=new Set();paid2026InRef[r.rfc].add(String(r.periodo));}if(!seen.has(r.rfc)){seen.add(r.rfc);rfcRefCount[r.rfc]=(rfcRefCount[r.rfc]||0)+1;}if(!rfcContrib[r.rfc]&&r.contrib)rfcContrib[r.rfc]=r.contrib;}}
+  const candidates=new Set();
+  for(const[rfc,cnt]of Object.entries(rfcRefCount))if(cnt>=2)candidates.add(rfc);
+  for(const[rfc,ps]of Object.entries(paid2026InRef))if(ps.size>=2)candidates.add(rfc);
+  const omisos=[];
+  for(const rfc of candidates){
+    const cnt=rfcRefCount[rfc]||0,p26=paid2026InRef[rfc]||new Set();
+    if(cnt<2&&p26.size<2)continue;
+    const paidSet=new Set(Object.keys(globalPeriods[rfc]||{}));
+    if(!dominant||paidSet.has(dominant))continue;
+    const has2026=[...paidSet].some(p=>p.startsWith('2026'));
+    const missing=has2026?getMissingPeriods(paidSet,dominant,12,null):getMissingPeriods(paidSet,dominant,12,'202601');
+    if(!missing.length)continue;
+    const refAmounts=Object.values(rfcRefPeriods[rfc]||{});if(!refAmounts.length)continue;
+    const avg=refAmounts.reduce((s,v)=>s+v,0)/refAmounts.length;
+    const seg=!has2026?'omisos_totales':cnt>=nRef?'alta':cnt>=3?'media':'seguimiento';
+    omisos.push({rfc,contrib:rfcContrib[rfc]||globalContrib[rfc]||'',count:cnt,avg:Math.round(avg*missing.length),nMissing:missing.length,pending:missing.map(formatPeriod),seg});
+  }
+  omisos.sort((a,b)=>b.avg-a.avg);
+  const esperado=omisos.filter(o=>o.seg==='alta'||o.seg==='media').reduce((s,o)=>s+o.avg,0);
+  const proyeccion=acumulado+esperado,meta=METAS[monthNum]||0;
+  const segments={};
+  for(const o of omisos){if(!segments[o.seg])segments[o.seg]={count:0,monto:0,omisos:[]};segments[o.seg].count++;segments[o.seg].monto+=o.avg;segments[o.seg].omisos.push({rfc:o.rfc,contrib:o.contrib,avg:o.avg,count:o.count,nMissing:o.nMissing,pending:o.pending});}
+  for(const s of Object.values(segments)){s.monto=Math.round(s.monto);s.omisos.sort((a,b)=>b.avg-a.avg);}
+  return{mes_label:MONTH_LABELS[monthNum]||String(monthNum),mes_num:monthNum,meta,dominant_period:dominant?parseInt(dominant):0,ref_months:refMonths,acumulado_real:Math.round(acumulado),total_omisos:omisos.length,total_esperado:Math.round(esperado),proyeccion_cierre:Math.round(proyeccion),meta_cruzada:proyeccion>=meta,pct_acumulado:meta?acumulado/meta*100:0,pct_proyeccion:meta?proyeccion/meta*100:0,segmentos:segments,omisos:omisos.slice(0,5000)};
+}
+
+const SEG_CONFIG={alta:{label:'Alta',color:'#8B1A2E',bg:'#FFF0F2'},media:{label:'Media',color:'#C9A84C',bg:'#FFFBF0'},seguimiento:{label:'Seguimiento',color:'#1D9E75',bg:'#F0FBF7'},omisos_totales:{label:'Omisos Totales',color:'#666666',bg:'#F5F5F5'}};
+
+function renderDash(data){
+  if(!data)return;
+  currentMonth=data.mes_num;
+  // --- Calcular en tiempo real desde segmentos ---
+  const esperadoAltaMedia=(((data.segmentos||{}).alta||{}).monto||0)+(((data.segmentos||{}).media||{}).monto||0);
+  const proyeccionAltaMedia=(data.acumulado_real||0)+esperadoAltaMedia;
+  const pctProyAltaMedia=(data.meta&&data.meta>0)?proyeccionAltaMedia/data.meta*100:0;
+  const metaCruzada=proyeccionAltaMedia>=(data.meta||0);
+  // --- KPI cards ---
+  document.getElementById('kpiAcumSub').textContent=(data.mes_label||'')+' 2026';
+  document.getElementById('kpiAcumVal').textContent=fmtK(data.acumulado_real||0);
+  document.getElementById('kpiAcumNote').textContent=fmt(data.acumulado_real||0);
+  document.getElementById('kpiMetaSub').textContent='Meta '+(data.mes_label||'');
+  document.getElementById('kpiMetaVal').textContent=fmtK(data.meta||0);
+  document.getElementById('kpiMetaNote').textContent=fmt(data.meta||0);
+  const pCard=document.getElementById('kpiProyCard');
+  pCard.style.borderTopColor=metaCruzada?'var(--teal)':'#E57373';
+  document.getElementById('kpiProySub').textContent=metaCruzada?'Supera meta':'Bajo meta';
+  document.getElementById('kpiProyVal').textContent=fmtK(proyeccionAltaMedia);
+  document.getElementById('kpiProyNote').textContent=Math.round(pctProyAltaMedia)+'% de la meta';
+  document.getElementById('kpiOmisosSub').textContent='Total detectados';
+  document.getElementById('kpiOmisosVal').textContent=(data.total_omisos||0).toLocaleString('es-MX');
+  document.getElementById('kpiOmisosNote').textContent='Estimado '+fmtK(esperadoAltaMedia);
+  // --- YTD card ---
+  const ytdMeta=Object.keys(allData).filter(m=>Number(m)<=currentMonth).reduce((s,m)=>s+(allData[m].meta||0),0);
+  const ytdReal=Object.keys(allData).filter(m=>Number(m)<=currentMonth).reduce((s,m)=>s+(allData[m].acumulado_real||0),0);
+  const ytdPct=ytdMeta?ytdReal/ytdMeta*100:0;
+  const ytdOk=ytdReal>=ytdMeta;
+  const ytdDiff=Math.abs(ytdReal-ytdMeta);
+  const ytdDiffLabel=ytdOk?'+ '+fmt(ytdDiff)+' sobre meta':'Falta '+fmt(ytdDiff);
+  const ytdDiffColor=ytdOk?'#1D9E75':'#E57373';
+  // Barra 1: recaudado vs meta (desborda en dorado si supera)
+  const maxPct1=Math.max(ytdPct,100)*1.06;
+  const bar1RealW=Math.min(ytdPct/maxPct1*100,100);
+  const bar1OvrW=ytdOk?Math.max(0,Math.min((ytdPct-100)/maxPct1*100,100-bar1RealW)):0;
+  // Barra 2: con marcador blanco en 100%
+  const scale2=Math.max(ytdPct,108);
+  const bar2W=Math.min(ytdPct/scale2*100,100);
+  const marker2W=100/scale2*100;
+  // Barra 3: vs 2025
+  const ytd2025=Object.keys(HIST_2025).filter(m=>Number(m)<=currentMonth).reduce((s,m)=>s+(HIST_2025[m]||0),0);
+  const yoyDiff=ytdReal-ytd2025;
+  const yoyPct=ytd2025?yoyDiff/ytd2025*100:0;
+  const yoyOk=yoyDiff>=0;
+  const maxYoy=Math.max(ytdReal,ytd2025)||1;
+  const bar3_2025W=ytd2025/maxYoy*92;
+  const bar3_2026W=ytdReal/maxYoy*92;
+  const firstMonthNum=Math.min(...Object.keys(allData).map(Number).filter(n=>n>0));
+  const firstLabel=MONTH_LABELS[firstMonthNum]||'Enero';
+  document.getElementById('ytdCard').innerHTML=
+    '<div class="kpi-card" style="border-top-color:#5C6BC0;display:flex;align-items:stretch;gap:32px;flex-wrap:wrap">'+
+      '<div style="min-width:155px;flex:0 0 175px;display:flex;flex-direction:column;justify-content:center">'+
+        '<div class="kpi-label">Recaudaci&oacute;n Anual</div>'+
+        '<div class="kpi-sub">'+firstLabel+'&ndash;'+data.mes_label+' real vs. meta</div>'+
+        '<div class="kpi-val" style="color:#5C6BC0;margin-top:6px">'+fmtK(ytdReal)+'</div>'+
+        '<div style="margin-top:8px">'+
+          (ytdOk
+            ?'<span style="background:#1D9E75;color:#fff;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700">&#10003; Sobre meta anual</span>'
+            :'<span style="background:#E57373;color:#fff;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700">&#10007; Bajo meta anual</span>')+
+        '</div>'+
+      '</div>'+
+      '<div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:16px;justify-content:center">'+
+        '<div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">'+
+            '<span style="font-weight:700">'+Math.round(ytdPct*10)/10+'% de la meta</span>'+
+          '</div>'+
+          '<div class="progress-wrap" style="position:relative;overflow:hidden;background:#E8EAF0">'+
+            '<div style="position:absolute;top:0;left:0;height:100%;width:'+bar2W+'%;background:#8B1A2E;transition:width 0.5s"></div>'+
+            '<div style="position:absolute;top:0;left:'+marker2W+'%;height:100%;width:2px;background:rgba(255,255,255,0.9)"></div>'+
+          '</div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px">'+
+            '<span style="color:#8B1A2E;font-weight:600">'+fmt(ytdReal)+' recaudado</span>'+
+            '<span style="color:'+ytdDiffColor+';font-weight:600">'+ytdDiffLabel+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">'+
+            '<span style="font-weight:700">vs. mismo periodo 2025</span>'+
+            '<span style="color:'+(yoyOk?'#1D9E75':'#E57373')+';font-weight:700;font-size:12px">'+
+              (yoyOk?'&#9650;':'&#9660;')+' '+Math.abs(yoyPct).toFixed(1)+'% '+(yoyOk?'m&aacute;s':'menos')+' que 2025&nbsp;&nbsp;'+
+              '<span style="font-size:11px">'+(yoyOk?'+':'')+fmt(yoyDiff)+'</span>'+
+            '</span>'+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+
+            '<span style="font-size:11px;color:#999;width:32px">2025</span>'+
+            '<div style="flex:1;background:#F1F5F9;border-radius:99px;height:10px;overflow:hidden">'+
+              '<div style="height:100%;width:'+bar3_2025W+'%;background:#F48FB1;border-radius:99px;transition:width 0.5s"></div>'+
+            '</div>'+
+            '<span style="font-size:11px;color:#999;min-width:90px;text-align:right">'+fmt(ytd2025)+'</span>'+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:8px">'+
+            '<span style="font-size:11px;color:#8B1A2E;font-weight:700;width:32px">2026</span>'+
+            '<div style="flex:1;background:#F1F5F9;border-radius:99px;height:10px;overflow:hidden">'+
+              '<div style="height:100%;width:'+bar3_2026W+'%;background:#8B1A2E;border-radius:99px;transition:width 0.5s"></div>'+
+            '</div>'+
+            '<span style="font-size:11px;color:#8B1A2E;font-weight:700;min-width:90px;text-align:right">'+fmt(ytdReal)+'</span>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  // --- Barras de progreso ---
+  const pA=data.pct_acumulado||0;
+  const maxP=Math.max(pctProyAltaMedia,pA,1);
+  const acumW=Math.min(pA/maxP*100,100);
+  const omisosW=Math.max(0,Math.min((pctProyAltaMedia-pA)/maxP*100,100-acumW));
+  document.getElementById('avanceContent').innerHTML=
+    '<div style="margin-bottom:18px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">'+
+        '<span>Acumulado real</span>'+
+        '<span style="font-weight:700;color:#8B1A2E">'+Math.round(pA)+'% de la meta</span>'+
+      '</div>'+
+      '<div class="progress-wrap">'+
+        '<div class="progress-fill" style="width:'+Math.min(pA,100)+'%;background:#8B1A2E"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px">'+
+        '<span style="color:#8B1A2E;font-weight:600">'+fmtK(data.acumulado_real)+' recaudado</span>'+
+        '<span>Meta: '+fmtK(data.meta)+'</span>'+
+      '</div>'+
+    '</div>'+
+    '<div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">'+
+        '<span>Proyecci&oacute;n de cierre (Alta + Media)</span>'+
+        '<span style="font-weight:700;color:#0D1B3E">'+Math.round(pctProyAltaMedia)+'% de la meta</span>'+
+      '</div>'+
+      '<div class="progress-wrap" style="background:#E8EAF0;position:relative;overflow:hidden">'+
+        '<div style="position:absolute;top:0;left:0;height:100%;width:'+acumW+'%;background:#0D1B3E;border-radius:99px 0 0 99px"></div>'+
+        '<div style="position:absolute;top:0;left:'+acumW+'%;height:100%;width:'+omisosW+'%;background:#C9A84C"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;flex-wrap:wrap;gap:4px;margin-top:4px">'+
+        '<span style="color:#0D1B3E">&#9644; '+fmtK(data.acumulado_real)+' real</span>'+
+        '<span style="color:#C9A84C">&#9644; +'+fmtK(esperadoAltaMedia)+' omisos</span>'+
+        '<span style="color:#0D1B3E;font-weight:700">= '+fmtK(proyeccionAltaMedia)+'</span>'+
+      '</div>'+
+    '</div>';
+  // --- Periodo dominante ---
+  if(data.dominant_period)document.getElementById('periodDominant').textContent='Periodo dominante: '+formatPeriod(data.dominant_period)+' &ndash; Meses de referencia: '+(data.ref_months?data.ref_months.length:0);
+  // --- Segmentos ---
+  const sg=document.getElementById('segGrid');sg.innerHTML='';
+  for(const[key,cfg]of Object.entries(SEG_CONFIG)){const s=(data.segmentos||{})[key];const card=document.createElement('div');card.className='seg-card';card.style.background=cfg.bg;card.style.borderColor=cfg.color;card.innerHTML='<div class="seg-badge" style="background:'+cfg.color+'">'+cfg.label+'</div><div class="seg-name">'+cfg.label+'</div><div class="seg-count">'+(s?s.count:0)+' contribuyentes</div><div class="seg-monto" style="color:'+cfg.color+'">'+(s?fmtK(s.monto):'$0')+'</div>';sg.appendChild(card);}
+  allOmisos=data.omisos||[];currentPage=1;renderTable();
+  if(lastUpdated)document.getElementById('footerUpdated').textContent='Actualizado: '+lastUpdated;
+}
+
+function renderTable(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const seg=document.getElementById('segFilter').value;
+  let rows=allOmisos;
+  if(q)rows=rows.filter(o=>o.rfc.toLowerCase().includes(q)||(o.contrib||'').toLowerCase().includes(q));
+  if(seg)rows=rows.filter(o=>o.seg===seg);
+  rows=sortRows(rows);
+  const total=rows.length,pages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  currentPage=Math.min(currentPage,pages);
+  const pageRows=rows.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
+  // Render thead con indicadores de orden
+  const cols=[
+    {key:'rfc',label:'RFC',style:''},
+    {key:'contrib',label:'Contribuyente',style:''},
+    {key:'seg',label:'Segmento',style:''},
+    {key:'count',label:'Meses Ref.',style:'text-align:center'},
+    {key:'pending',label:'Periodos Pendientes',style:'',noSort:true},
+    {key:'avg',label:'Estimado',style:'text-align:right'}
+  ];
+  const si=sortDir===1?'&#9650;':'&#9660;';
+  document.getElementById('omisosHead').innerHTML='<tr>'+cols.map(c=>{
+    const ind=c.noSort?'':'<span class="sort-ind'+(sortCol===c.key?' on':'')+'">'+(sortCol===c.key?si:'&#8645;')+'</span>';
+    return '<th style="'+c.style+'"'+(c.noSort?'':' onclick="toggleSort(\''+c.key+'\')"')+'>'+c.label+ind+'</th>';
+  }).join('')+'</tr>';
+  const tbody=document.getElementById('omisosBody');tbody.innerHTML='';
+  for(const o of pageRows){const cfg=SEG_CONFIG[o.seg]||SEG_CONFIG.seguimiento;const tr=document.createElement('tr');tr.innerHTML='<td><span class="rfc-code">'+o.rfc+'</span></td><td>'+(o.contrib||'-')+'</td><td><span class="seg-pill" style="background:'+cfg.color+';color:#fff">'+cfg.label+'</span></td><td style="text-align:center">'+(o.count||0)+'</td><td style="font-size:11px;color:#555">'+((o.pending||[]).join(', '))+'</td><td>'+fmt(o.avg)+'</td>';tbody.appendChild(tr);}
+  document.getElementById('omisosFoot').innerHTML='<tr><td colspan="5">Total filtrado: '+total.toLocaleString('es-MX')+' omisos</td><td>'+fmt(rows.reduce((s,o)=>s+o.avg,0))+'</td></tr>';
+  renderPagination(pages);
+}
+function renderPagination(pages){const c=document.getElementById('pagination');c.innerHTML='';if(pages<=1)return;const add=(label,page,active,disabled)=>{const b=document.createElement('button');b.className='page-btn'+(active?' active':'');b.textContent=label;b.disabled=!!disabled;b.onclick=()=>{currentPage=page;renderTable();};c.appendChild(b);};add('&laquo;',1,false,currentPage===1);add('&lsaquo;',currentPage-1,false,currentPage===1);const s=Math.max(1,currentPage-2),e=Math.min(pages,s+4);for(let p=s;p<=e;p++)add(String(p),p,p===currentPage,false);add('&rsaquo;',currentPage+1,false,currentPage===pages);add('&raquo;',pages,false,currentPage===pages);}
+
+function switchMonth(num){const data=allData[String(num)];if(data)renderDash(data);setStatus('Mostrando '+(MONTH_LABELS[num]||num));}
+function populateMonthSel(){const sel=document.getElementById('monthSel');const months=Object.keys(allData).map(Number).sort((a,b)=>a-b);sel.innerHTML=months.map(n=>'<option value="'+n+'">'+(MONTH_LABELS[n]||n)+'</option>').join('');if(months.length)sel.value=Math.max(...months);}
+function setStatus(msg,type){const bar=document.getElementById('statusBar');bar.className='status-bar'+(type==='error'?' error':type==='updating'?' updating':'');document.getElementById('statusMsg').textContent=msg;document.getElementById('spinner').style.display=type==='updating'?'inline-block':'none';}
+
+async function loadFromDrive(silentOnError=false){
+  const btn=document.getElementById('btnRefresh');btn.disabled=true;
+  setStatus(silentOnError?'Actualizando en segundo plano...':'Conectando con Google Drive...','updating');
+  try{
+    const files=await driveListFiles();
+    const monthFiles=[];
+    for(const f of files){const nameN=normalizeStr(f.name);const mn=Object.keys(MONTH_NAMES).find(m=>nameN.includes(m));if(mn)monthFiles.push({...f,num:MONTH_NAMES[mn]});}
+    if(!monthFiles.length){
+      if(!silentOnError)setStatus('No se encontraron archivos con nombre de mes en Drive.','error');
+      else setStatus('Datos pre-cargados · Drive sin archivos');
+      btn.disabled=false;return;
+    }
+    monthFiles.sort((a,b)=>a.num-b.num);
+    const allMonthData={};
+    for(const f of monthFiles){setStatus('Descargando '+f.name+'...','updating');const recs=_parseWorkbook(await driveDownload(f.id));if(!allMonthData[f.num])allMonthData[f.num]=[];allMonthData[f.num].push(...recs);}
+    setStatus('Calculando proyecciones...','updating');
+    const newData={};
+    for(const num of Object.keys(allMonthData).map(Number).sort((a,b)=>a-b))newData[String(num)]=computeMonth(num,allMonthData);
+    // Mantener el mayor acumulado por mes
+    for(const key of Object.keys(newData)){
+      if(allData[key]&&(newData[key].acumulado_real||0)<(allData[key].acumulado_real||0)){
+        newData[key]=allData[key];
+      }
+    }
+    // Conservar meses existentes sin archivos nuevos
+    for(const key of Object.keys(allData)){
+      if(!newData[key])newData[key]=allData[key];
+    }
+    allData=newData;lastUpdated=new Date().toLocaleString('es-MX');
+    populateMonthSel();
+    const latest=Math.max(...Object.keys(newData).map(Number));
+    renderDash(newData[String(latest)]);document.getElementById('monthSel').value=latest;
+    setStatus('Actualizado - '+monthFiles.length+' archivos - '+lastUpdated);
+  }catch(e){
+    console.error(e);
+    if(silentOnError&&currentMonth){
+      setStatus('Datos al '+(lastUpdated||'...')+' · Sin conexión a Drive');
+    }else{
+      setStatus('Error: '+e.message,'error');
+    }
+  }
+  finally{btn.disabled=false;}
+}
+
+function exportExcel(){
+  const ws=XLSX.utils.json_to_sheet(allOmisos.map(o=>({
+    'RFC':o.rfc,
+    'Contribuyente':o.contrib||'',
+    'Segmento':(SEG_CONFIG[o.seg]||{label:o.seg}).label,
+    'Meses Ref.':o.count,
+    'Periodos Pendientes':(o.pending||[]).join(', '),
+    'Estimado':o.avg
+  })));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Omisos');
+  XLSX.writeFile(wb,'omisos-cedular-'+(currentMonth?MONTH_LABELS[currentMonth]:'')+'-2026.xlsx');
+}
+
+function exportPNG(){html2canvas(document.querySelector('.content'),{scale:2,backgroundColor:'#F0EDE8'}).then(canvas=>{const a=document.createElement('a');a.download='imp-cedular-'+(currentMonth?MONTH_LABELS[currentMonth]:'')+'-2026.png';a.href=canvas.toDataURL('image/png');a.click();});}
+
+(function init(){
+  const months=Object.keys(allData).map(Number).filter(n=>n>0);
+  if(months.length){
+    populateMonthSel();
+    renderDash(allData[String(Math.max(...months))]);
+    if(lastUpdated)document.getElementById('footerUpdated').textContent='Actualizado: '+lastUpdated;
+    setStatus('✓ Datos al '+lastUpdated);
+  }else{
+    setStatus('Sin datos precargados — pulsa Actualizar para cargar desde Drive','error');
+  }
+})();
+</script>
+</body>
+</html>
