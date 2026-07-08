@@ -323,6 +323,26 @@ def compute_month(month_num, all_month_data, metas):
         s["monto"] = round(s["monto"])
         s["omisos"].sort(key=lambda x: -x["avg"])
 
+    # RFC pagadores del mes vigente: quien SI aparece en el archivo de este mes
+    pag_map = {}
+    for r in cur:
+        rfc = r.get("rfc", "")
+        if not rfc:
+            continue
+        if rfc not in pag_map:
+            pag_map[rfc] = {"rfc": rfc, "contrib": r.get("contrib", ""), "total": 0.0, "periodos": set()}
+        pag_map[rfc]["total"] += r["recaudacion"]
+        if r.get("periodo") and len(str(r["periodo"])) == 6:
+            pag_map[rfc]["periodos"].add(str(r["periodo"]))
+        if not pag_map[rfc]["contrib"] and r.get("contrib"):
+            pag_map[rfc]["contrib"] = r["contrib"]
+
+    pagadores = sorted([
+        {"rfc": v["rfc"], "contrib": v["contrib"], "total": round(v["total"]),
+         "periodos": [format_period(p) for p in sorted(v["periodos"])]}
+        for v in pag_map.values()
+    ], key=lambda x: -x["total"])
+
     return {
         "mes_label": MONTH_LABELS.get(month_num, str(month_num)),
         "mes_num": month_num,
@@ -338,6 +358,7 @@ def compute_month(month_num, all_month_data, metas):
         "pct_proyeccion": (proyeccion / meta * 100) if meta else 0,
         "segmentos": segments,
         "omisos": omisos[:5000],
+        "pagadores": pagadores[:5000],
     }
 
 
