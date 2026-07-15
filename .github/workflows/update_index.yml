@@ -2,7 +2,8 @@ name: Actualizar dashboard Impuesto Cedular
 
 on:
   schedule:
-    - cron: '0 14-22 * * 1-5'
+    - cron: '50 0 * * *'   # 18:30 CST todos los días
+    - cron: '10 6 * * *'   # 23:50 CST todos los días
   workflow_dispatch:
 
 permissions:
